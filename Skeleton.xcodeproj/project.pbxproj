@@ -17,6 +17,8 @@
 		7B99D7F61E97C7190003349B /* TexturedQuad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B99D7F51E97C7190003349B /* TexturedQuad.swift */; };
 		7B99D7F81E97D2610003349B /* Math.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B99D7F71E97D2610003349B /* Math.swift */; };
 		7B99D7FA1E97DD340003349B /* sophie.png in Resources */ = {isa = PBXBuildFile; fileRef = 7B99D7F91E97DD340003349B /* sophie.png */; };
+		7B99D7FC1E992EF50003349B /* SubtractMeanColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B99D7FB1E992EF50003349B /* SubtractMeanColor.swift */; };
+		7BCB01691E99309C00A367B1 /* MetalHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCB01681E99309C00A367B1 /* MetalHelpers.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +34,8 @@
 		7B99D7F51E97C7190003349B /* TexturedQuad.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TexturedQuad.swift; sourceTree = "<group>"; };
 		7B99D7F71E97D2610003349B /* Math.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Math.swift; sourceTree = "<group>"; };
 		7B99D7F91E97DD340003349B /* sophie.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sophie.png; sourceTree = SOURCE_ROOT; };
+		7B99D7FB1E992EF50003349B /* SubtractMeanColor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SubtractMeanColor.swift; sourceTree = "<group>"; };
+		7BCB01681E99309C00A367B1 /* MetalHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MetalHelpers.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,9 +72,8 @@
 				7B57823F1E93B06800555E30 /* AppDelegate.swift */,
 				7B5782511E93B08800555E30 /* VideoCapture.swift */,
 				7B5782411E93B06800555E30 /* CameraViewController.swift */,
-				7B99D7F51E97C7190003349B /* TexturedQuad.swift */,
-				7B99D7F71E97D2610003349B /* Math.swift */,
-				7B99D7F31E97C2FF0003349B /* Shaders.metal */,
+				7BCB016A1E9931D900A367B1 /* VGGNet */,
+				7BCB01671E99309000A367B1 /* Metal Helpers */,
 				7B5782531E93B09D00555E30 /* Resources */,
 			);
 			path = Skeleton;
@@ -85,6 +88,25 @@
 				7B5782431E93B06800555E30 /* Main.storyboard */,
 			);
 			name = Resources;
+			sourceTree = "<group>";
+		};
+		7BCB01671E99309000A367B1 /* Metal Helpers */ = {
+			isa = PBXGroup;
+			children = (
+				7B99D7F71E97D2610003349B /* Math.swift */,
+				7BCB01681E99309C00A367B1 /* MetalHelpers.swift */,
+			);
+			name = "Metal Helpers";
+			sourceTree = "<group>";
+		};
+		7BCB016A1E9931D900A367B1 /* VGGNet */ = {
+			isa = PBXGroup;
+			children = (
+				7B99D7F31E97C2FF0003349B /* Shaders.metal */,
+				7B99D7FB1E992EF50003349B /* SubtractMeanColor.swift */,
+				7B99D7F51E97C7190003349B /* TexturedQuad.swift */,
+			);
+			name = VGGNet;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -164,6 +186,8 @@
 				7B99D7F61E97C7190003349B /* TexturedQuad.swift in Sources */,
 				7B99D7F41E97C2FF0003349B /* Shaders.metal in Sources */,
 				7B5782421E93B06800555E30 /* CameraViewController.swift in Sources */,
+				7BCB01691E99309C00A367B1 /* MetalHelpers.swift in Sources */,
+				7B99D7FC1E992EF50003349B /* SubtractMeanColor.swift in Sources */,
 				7B5782521E93B08800555E30 /* VideoCapture.swift in Sources */,
 				7B5782401E93B06800555E30 /* AppDelegate.swift in Sources */,
 				7B99D7F81E97D2610003349B /* Math.swift in Sources */,

@@ -14,6 +14,9 @@ class TexturedQuad {
   var uniformBuffer: MTLBuffer
   var texture: MTLTexture!
 
+  var position = float3()
+  var size: Float = 100
+
   init(device: MTLDevice, view: MTKView, inflightCount: Int) {
     let defaultLibrary = device.newDefaultLibrary()!
     let vertexProgram = defaultLibrary.makeFunction(name: "vertexFunc")!
@@ -37,12 +40,16 @@ class TexturedQuad {
   }
 
   func encode(_ encoder: MTLRenderCommandEncoder, matrix: float4x4, for inflightIndex: Int) {
+    // Position the quad. The quad's origin is in its center. Its size goes
+    // from -0.5 to +0.5, so we should scale it to the actual size in pixels.
+    var matrix = matrix * float4x4.translate(to: position)
+                        * float4x4.scale(to: [size, -size, 1])
+
     // Copy the matrix into the uniform buffer.
-    var matrix = matrix
     let bufferPointer = uniformBuffer.contents()
-    let size = MemoryLayout<float4x4>.stride
-    let offset = inflightIndex * size
-    memcpy(bufferPointer + offset, &matrix, size)
+    let byteSize = MemoryLayout<float4x4>.stride
+    let offset = inflightIndex * byteSize
+    memcpy(bufferPointer + offset, &matrix, byteSize)
 
     encoder.pushDebugGroup("TexturedQuad")
     encoder.setRenderPipelineState(pipelineState)
