@@ -21,6 +21,8 @@
 		7BCB01691E99309C00A367B1 /* ComputeHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCB01681E99309C00A367B1 /* ComputeHelpers.swift */; };
 		7BCB016C1E99325300A367B1 /* Visualize.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCB016B1E99325300A367B1 /* Visualize.swift */; };
 		7BCB016E1E99391800A367B1 /* TextureLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCB016D1E99391800A367B1 /* TextureLoader.swift */; };
+		7BCB01701E9950BC00A367B1 /* VGGNetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BCB016F1E9950BC00A367B1 /* VGGNetData.swift */; };
+		7BCB01721E99524B00A367B1 /* parameters.data in Resources */ = {isa = PBXBuildFile; fileRef = 7BCB01711E99524B00A367B1 /* parameters.data */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +42,8 @@
 		7BCB01681E99309C00A367B1 /* ComputeHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ComputeHelpers.swift; sourceTree = "<group>"; };
 		7BCB016B1E99325300A367B1 /* Visualize.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Visualize.swift; sourceTree = "<group>"; };
 		7BCB016D1E99391800A367B1 /* TextureLoader.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextureLoader.swift; sourceTree = "<group>"; };
+		7BCB016F1E9950BC00A367B1 /* VGGNetData.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VGGNetData.swift; sourceTree = "<group>"; };
+		7BCB01711E99524B00A367B1 /* parameters.data */ = {isa = PBXFileReference; lastKnownFileType = file; path = parameters.data; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +95,7 @@
 				7B57824B1E93B06800555E30 /* Info.plist */,
 				7B5782481E93B06800555E30 /* LaunchScreen.storyboard */,
 				7B5782431E93B06800555E30 /* Main.storyboard */,
+				7BCB01711E99524B00A367B1 /* parameters.data */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -111,6 +116,7 @@
 				7B99D7F31E97C2FF0003349B /* Shaders.metal */,
 				7B99D7FB1E992EF50003349B /* SubtractMeanColor.swift */,
 				7B99D7F51E97C7190003349B /* TexturedQuad.swift */,
+				7BCB016F1E9950BC00A367B1 /* VGGNetData.swift */,
 			);
 			name = VGGNet;
 			sourceTree = "<group>";
@@ -175,6 +181,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7BCB01721E99524B00A367B1 /* parameters.data in Resources */,
 				7B57824A1E93B06800555E30 /* LaunchScreen.storyboard in Resources */,
 				7B99D7FA1E97DD340003349B /* sophie.png in Resources */,
 				7B5782471E93B06800555E30 /* Assets.xcassets in Resources */,
@@ -191,6 +198,7 @@
 			files = (
 				7B99D7F61E97C7190003349B /* TexturedQuad.swift in Sources */,
 				7B99D7F41E97C2FF0003349B /* Shaders.metal in Sources */,
+				7BCB01701E9950BC00A367B1 /* VGGNetData.swift in Sources */,
 				7B5782421E93B06800555E30 /* CameraViewController.swift in Sources */,
 				7BCB01691E99309C00A367B1 /* ComputeHelpers.swift in Sources */,
 				7B99D7FC1E992EF50003349B /* SubtractMeanColor.swift in Sources */,

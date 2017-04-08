@@ -6,9 +6,31 @@ import MetalPerformanceShaders
 private let MaxFramesInFlight = 3   // use triple buffering
 private let MaxQuads = 100
 
+private func makeConv(device: MTLDevice,
+                      inDepth: Int,
+                      outDepth: Int,
+                      weights: UnsafePointer<Float>,
+                      bias: UnsafePointer<Float>) -> MPSCNNConvolution {
+
+  let relu = MPSCNNNeuronReLU(device: device, a: 0)
+
+  let desc = MPSCNNConvolutionDescriptor(kernelWidth: 3,
+                                         kernelHeight: 3,
+                                         inputFeatureChannels: inDepth,
+                                         outputFeatureChannels: outDepth,
+                                         neuronFilter: relu)
+
+  let conv = MPSCNNConvolution(device: device,
+                               convolutionDescriptor: desc,
+                               kernelWeights: weights,
+                               biasTerms: bias,
+                               flags: .none)
+  return conv
+}
+
 class Visualize {
-  var device: MTLDevice!
-  var commandQueue: MTLCommandQueue
+  let device: MTLDevice
+  let commandQueue: MTLCommandQueue
 
   var videoTexture: MTLTexture?
 
@@ -16,11 +38,16 @@ class Visualize {
   var inflightIndex = 0
 
   let inputImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 3)
-  var img1: MPSImage
-  var img2: MPSImage
+  let conv1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 64)
 
-  var lanczos: MPSImageLanczosScale
-  var subtractMeanColor: SubtractMeanColor
+  let img1: MPSImage
+  let img2: MPSImage
+  let img3: MPSImage
+
+  let lanczos: MPSImageLanczosScale
+  let subtractMeanColor: SubtractMeanColor
+
+  let conv1_1: MPSCNNConvolution  // 224x224x3  input, 64 kernels (3x3x3x64  = 1728  weights + 64 bias)
 
   var quads: QuadRenderer!
 
@@ -32,9 +59,17 @@ class Visualize {
 
     img1 = MPSImage(device: device, imageDescriptor: inputImgDesc)
     img2 = MPSImage(device: device, imageDescriptor: inputImgDesc)
+    img3 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
 
     lanczos = MPSImageLanczosScale(device: device)
     subtractMeanColor = SubtractMeanColor(device: device)
+
+    guard let path = Bundle.main.path(forResource: "parameters", ofType: "data"),
+          let blob = VGGNetData(path: path) else {
+      fatalError("Error loading network parameters")
+    }
+
+    conv1_1 = makeConv(device: device, inDepth:   3, outDepth:  64, weights: blob.conv1_1_w, bias: blob.conv1_1_b)
 
     quads = QuadRenderer(device: device, pixelFormat: view.colorPixelFormat, maxQuads: MaxQuads, inflightCount: MaxFramesInFlight)
     createQuads()
@@ -43,7 +78,17 @@ class Visualize {
   func createQuads() {
     quads.add(TexturedQuad(position: [112, 112, 0], size: 224))
     quads.add(TexturedQuad(position: [338, 112, 0], size: 224))
-    quads.add(TexturedQuad(position: [564, 112, 0], size: 224))
+
+    for i in 0..<3 {
+      for j in 0..<3 {
+        let y = Float(112 + (i + 1) * (224 + 2))
+        let x = Float(112 + j * (224 + 2))
+        let quad = TexturedQuad(position: [x, y, 0], size: 224)
+        quad.isArray = true
+        quad.channel = i*3 + j
+        quads.add(quad)
+      }
+    }
   }
 
   func draw(in view: MTKView) {
@@ -72,6 +117,8 @@ class Visualize {
       lanczos.encode(commandBuffer: commandBuffer, sourceTexture: inputTexture, destinationTexture: img1.texture)
 
       subtractMeanColor.encode(commandBuffer: commandBuffer, sourceTexture: img1.texture, destinationTexture: img2.texture)
+
+      conv1_1.encode(commandBuffer: commandBuffer, sourceImage: img2, destinationImage: img3)
     }
 
     if let renderPassDescriptor = view.currentRenderPassDescriptor,
@@ -81,7 +128,9 @@ class Visualize {
 
       quads[0].texture = img1.texture
       quads[1].texture = img2.texture
-      quads[2].texture = img2.texture
+      for i in 0..<9 {
+        quads[i + 2].texture = img3.texture
+      }
       quads.encode(renderEncoder, matrix: projectionMatrix, for: inflightIndex)
 
       renderEncoder.endEncoding()

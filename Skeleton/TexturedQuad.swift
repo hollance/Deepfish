@@ -8,10 +8,21 @@ struct Vertex {
   var texCoord: float2
 }
 
+struct VertexUniform {
+  var matrix = float4x4.identity
+}
+
+struct FragmentUniform {
+  var textureIndex: Int16 = 0
+  var channelIndex: Int16 = 0
+}
+
 class TexturedQuad {
   var position = float3()
   var size: Float = 100
   var texture: MTLTexture?
+  var isArray = false
+  var channel = 0  // -1 means display as RGBA
 
   init(position: float3, size: Float) {
     self.position = position
@@ -22,9 +33,11 @@ class TexturedQuad {
 class QuadRenderer {
   let maxQuads: Int
   let inflightCount: Int
-  let pipelineState: MTLRenderPipelineState
+  let pipeline: MTLRenderPipelineState
+  let pipelineA: MTLRenderPipelineState
   let vertexBuffer: MTLBuffer
-  let uniformBuffer: MTLBuffer
+  let vertexUniformBuffer: MTLBuffer
+  let fragmentUniformBuffer: MTLBuffer
 
   private(set) var quads: [TexturedQuad] = []
 
@@ -32,16 +45,20 @@ class QuadRenderer {
     self.maxQuads = maxQuads
     self.inflightCount = inflightCount
 
-    let defaultLibrary = device.newDefaultLibrary()!
-    let vertexProgram = defaultLibrary.makeFunction(name: "vertexFunc")!
-    let fragmentProgram = defaultLibrary.makeFunction(name: "fragmentFunc")!
+    let library = device.newDefaultLibrary()!
+    let vertexProgram = library.makeFunction(name: "vertexFunc")!
+    let fragmentProgram = library.makeFunction(name: "fragmentFunc")!
+    let fragmentProgramA = library.makeFunction(name: "fragmentFuncA")!
 
     let pipelineStateDescriptor = MTLRenderPipelineDescriptor()
     pipelineStateDescriptor.vertexFunction = vertexProgram
     pipelineStateDescriptor.fragmentFunction = fragmentProgram
     pipelineStateDescriptor.colorAttachments[0].pixelFormat = pixelFormat
 
-    try! pipelineState = device.makeRenderPipelineState(descriptor: pipelineStateDescriptor)
+    try! pipeline = device.makeRenderPipelineState(descriptor: pipelineStateDescriptor)
+
+    pipelineStateDescriptor.fragmentFunction = fragmentProgramA
+    try! pipelineA = device.makeRenderPipelineState(descriptor: pipelineStateDescriptor)
 
     let vertexData = [Vertex(position: [-0.5, -0.5, 0, 1], texCoord: [0, 1]),
                       Vertex(position: [ 0.5, -0.5, 0, 1], texCoord: [1, 1]),
@@ -49,7 +66,8 @@ class QuadRenderer {
                       Vertex(position: [ 0.5,  0.5, 0, 1], texCoord: [1, 0])]
 
     vertexBuffer = device.makeBuffer(bytes: vertexData, length: MemoryLayout<Vertex>.stride * vertexData.count)
-    uniformBuffer = device.makeBuffer(length: MemoryLayout<float4x4>.stride * maxQuads * inflightCount)
+    vertexUniformBuffer = device.makeBuffer(length: MemoryLayout<VertexUniform>.stride * maxQuads * inflightCount)
+    fragmentUniformBuffer = device.makeBuffer(length: MemoryLayout<FragmentUniform>.stride * maxQuads * inflightCount)
   }
 
   func add(_ quad: TexturedQuad) {
@@ -69,19 +87,28 @@ class QuadRenderer {
 
       // Position the quad. The quad's origin is in its center. Its size goes
       // from -0.5 to +0.5, so we should scale it to the actual size in pixels.
-      var matrix = matrix * float4x4.translate(to: quad.position)
-                          * float4x4.scale(to: [quad.size, -quad.size, 1])
+      var vertexUniform = VertexUniform()
+      vertexUniform.matrix = matrix * float4x4.translate(to: quad.position)
+                              * float4x4.scale(to: [quad.size, -quad.size, 1])
 
       // Copy the matrix into the uniform buffer.
-      let bufferPointer = uniformBuffer.contents()
-      let byteSize = MemoryLayout<float4x4>.stride
-      let offset = (inflightIndex*inflightCount + quadIndex)*byteSize
-      memcpy(bufferPointer + offset, &matrix, byteSize)
+      let vertexUniformSize = MemoryLayout<VertexUniform>.stride
+      let vertexOffset = (inflightIndex*inflightCount + quadIndex)*vertexUniformSize
+      memcpy(vertexUniformBuffer.contents() + vertexOffset, &vertexUniform, vertexUniformSize)
+
+      var fragmentUniform = FragmentUniform()
+      fragmentUniform.textureIndex = Int16(quad.channel) / 4
+      fragmentUniform.channelIndex = Int16(quad.channel) - fragmentUniform.textureIndex*4
+
+      let fragmentUniformSize = MemoryLayout<FragmentUniform>.stride
+      let fragmentOffset = (inflightIndex*inflightCount + quadIndex)*fragmentUniformSize
+      memcpy(fragmentUniformBuffer.contents() + fragmentOffset, &fragmentUniform, fragmentUniformSize)
 
       encoder.pushDebugGroup("TexturedQuad")
-      encoder.setRenderPipelineState(pipelineState)
+      encoder.setRenderPipelineState(quad.isArray ? pipelineA : pipeline)
       encoder.setVertexBuffer(vertexBuffer, offset: 0, at: 0)
-      encoder.setVertexBuffer(uniformBuffer, offset: offset, at: 1)
+      encoder.setVertexBuffer(vertexUniformBuffer, offset: vertexOffset, at: 1)
+      encoder.setFragmentBuffer(fragmentUniformBuffer, offset: fragmentOffset, at: 0)
       encoder.setFragmentTexture(quad.texture, at: 0)
       encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
       encoder.popDebugGroup()
