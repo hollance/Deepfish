@@ -17,7 +17,7 @@ class TexturedQuad {
   var position = float3()
   var size: Float = 100
 
-  init(device: MTLDevice, view: MTKView, inflightCount: Int) {
+  init(device: MTLDevice, pixelFormat: MTLPixelFormat, inflightCount: Int) {
     let defaultLibrary = device.newDefaultLibrary()!
     let vertexProgram = defaultLibrary.makeFunction(name: "vertexFunc")!
     let fragmentProgram = defaultLibrary.makeFunction(name: "fragmentFunc")!
@@ -25,8 +25,7 @@ class TexturedQuad {
     let pipelineStateDescriptor = MTLRenderPipelineDescriptor()
     pipelineStateDescriptor.vertexFunction = vertexProgram
     pipelineStateDescriptor.fragmentFunction = fragmentProgram
-    pipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
-    pipelineStateDescriptor.sampleCount = view.sampleCount
+    pipelineStateDescriptor.colorAttachments[0].pixelFormat = pixelFormat
 
     try! pipelineState = device.makeRenderPipelineState(descriptor: pipelineStateDescriptor)
 
