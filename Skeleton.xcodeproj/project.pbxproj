@@ -98,8 +98,8 @@
 		7BCB01671E99309000A367B1 /* Metal Helpers */ = {
 			isa = PBXGroup;
 			children = (
-				7B99D7F71E97D2610003349B /* Math.swift */,
 				7BCB01681E99309C00A367B1 /* ComputeHelpers.swift */,
+				7B99D7F71E97D2610003349B /* Math.swift */,
 				7BCB016D1E99391800A367B1 /* TextureLoader.swift */,
 			);
 			name = "Metal Helpers";

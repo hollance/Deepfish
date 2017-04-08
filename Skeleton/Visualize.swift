@@ -4,6 +4,7 @@ import MetalKit
 import MetalPerformanceShaders
 
 private let MaxFramesInFlight = 3   // use triple buffering
+private let MaxQuads = 100
 
 class Visualize {
   var device: MTLDevice!
@@ -14,13 +15,14 @@ class Visualize {
   let inflightSemaphore = DispatchSemaphore(value: MaxFramesInFlight)
   var inflightIndex = 0
 
-  var lanczos: MPSImageLanczosScale
-  var subtractMeanColor: SubtractMeanColor
   let inputImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 3)
   var img1: MPSImage
   var img2: MPSImage
 
-  var quads: [TexturedQuad] = []
+  var lanczos: MPSImageLanczosScale
+  var subtractMeanColor: SubtractMeanColor
+
+  var quads: QuadRenderer!
 
   init(device: MTLDevice, view: MTKView) {
     self.device = device
@@ -28,25 +30,20 @@ class Visualize {
 
     videoTexture = loadTexture(named: "sophie.png")!
 
-    lanczos = MPSImageLanczosScale(device: device)
-    subtractMeanColor = SubtractMeanColor(device: device)
-
     img1 = MPSImage(device: device, imageDescriptor: inputImgDesc)
     img2 = MPSImage(device: device, imageDescriptor: inputImgDesc)
 
-    createQuads(pixelFormat: view.colorPixelFormat)
+    lanczos = MPSImageLanczosScale(device: device)
+    subtractMeanColor = SubtractMeanColor(device: device)
+
+    quads = QuadRenderer(device: device, pixelFormat: view.colorPixelFormat, maxQuads: MaxQuads, inflightCount: MaxFramesInFlight)
+    createQuads()
   }
 
-  func createQuads(pixelFormat: MTLPixelFormat) {
-    var quad = TexturedQuad(device: device, pixelFormat: pixelFormat, inflightCount: MaxFramesInFlight)
-    quad.position = [112, 112, 0]
-    quad.size = 224
-    quads.append(quad)
-
-    quad = TexturedQuad(device: device, pixelFormat: pixelFormat, inflightCount: MaxFramesInFlight)
-    quad.position = [338, 112, 0]
-    quad.size = 224
-    quads.append(quad)
+  func createQuads() {
+    quads.add(TexturedQuad(position: [112, 112, 0], size: 224))
+    quads.add(TexturedQuad(position: [338, 112, 0], size: 224))
+    quads.add(TexturedQuad(position: [564, 112, 0], size: 224))
   }
 
   func draw(in view: MTKView) {
@@ -83,10 +80,9 @@ class Visualize {
       let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
 
       quads[0].texture = img1.texture
-      quads[0].encode(renderEncoder, matrix: projectionMatrix, for: inflightIndex)
-
       quads[1].texture = img2.texture
-      quads[1].encode(renderEncoder, matrix: projectionMatrix, for: inflightIndex)
+      quads[2].texture = img2.texture
+      quads.encode(renderEncoder, matrix: projectionMatrix, for: inflightIndex)
 
       renderEncoder.endEncoding()
       commandBuffer.present(currentDrawable)
