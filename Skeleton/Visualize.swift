@@ -141,7 +141,7 @@ class Visualize {
     }
   }
 
-  func draw(in view: MTKView) {
+  func draw(in view: MTKView, callback: @escaping (CFTimeInterval) -> Void) {
     // Block until the next resource is available.
     _ = inflightSemaphore.wait(timeout: .distantFuture)
 
@@ -198,6 +198,7 @@ class Visualize {
     commandBuffer.addCompletedHandler { [weak self] commandBuffer in
       let elapsed = CACurrentMediaTime() - startTime
       print("Took \(elapsed) seconds")
+      DispatchQueue.main.async { callback(elapsed) }
 
       if let strongSelf = self {
         strongSelf.inflightSemaphore.signal()

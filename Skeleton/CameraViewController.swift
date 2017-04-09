@@ -9,6 +9,7 @@ class CameraViewController: UIViewController {
 
   @IBOutlet weak var videoPreview: UIView!
   @IBOutlet weak var panelLabel: UILabel!
+  @IBOutlet weak var timeLabel: UILabel!
 
   @IBOutlet weak var scrollView: UIScrollView!
   @IBOutlet weak var metalView: MTKView!
@@ -35,8 +36,8 @@ class CameraViewController: UIViewController {
 
     // Normally the MTKView asks for a redraw 60 times per second. But we're
     // going to give it new textures at a much lower rate, so we'll manually 
-    // tell the view when to redraw. Another option would be to redraw at, 
-    // say 30 FPS, and only give the view new data when we have it but that's
+    // tell the view when to redraw. Another option would be to redraw at 60
+    // or 30 FPS and only give the view new data when we have it, but that's
     // wasteful -- we'll already be burning enough battery as it is.
     metalView.isPaused = true
     metalView.enableSetNeedsDisplay = false
@@ -48,6 +49,8 @@ class CameraViewController: UIViewController {
     let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(swipedRight))
     swipeRight.direction = .right
     view.addGestureRecognizer(swipeRight)
+
+    timeLabel.text = ""
   }
 
   override func viewWillLayoutSubviews() {
@@ -142,7 +145,10 @@ extension CameraViewController: VideoCaptureDelegate {
 
 extension CameraViewController: MTKViewDelegate {
   func draw(in view: MTKView) {
-    visualize?.draw(in: view)
+    visualize.draw(in: view) { elapsed in
+      let fps = 1/elapsed
+      self.timeLabel.text = String(format: "%.5f seconds %.2f FPS", elapsed, fps)
+    }
   }
 
   func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
