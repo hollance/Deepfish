@@ -8,34 +8,46 @@ import QuartzCore
 class CameraViewController: UIViewController {
 
   @IBOutlet weak var videoPreview: UIView!
+  @IBOutlet weak var panelLabel: UILabel!
+
   @IBOutlet weak var scrollView: UIScrollView!
   @IBOutlet weak var metalView: MTKView!
 
-  var videoCapture: VideoCapture?
-  var visualize: Visualize?
-
+  var videoCapture: VideoCapture!
+  var visualize: Visualize!
   var device: MTLDevice!
 
   override func viewDidLoad() {
     super.viewDidLoad()
 
     device = MTLCreateSystemDefaultDevice()
-    if device != nil {
-      videoCapture = VideoCapture(device: device, delegate: self)
-      visualize = Visualize(device: device, view: metalView)
-
-      metalView.clearColor = MTLClearColor(red: 20/255, green: 30/255, blue: 40/255, alpha: 1)
-      metalView.device = device
-      metalView.delegate = self
-
-      // Normally the MTKView asks for a redraw 60 times per second. But we're
-      // going to give it new textures at a much lower rate, so we'll manually 
-      // tell the view when to redraw. Another option would be to redraw at, 
-      // say 30 FPS, and only give the view new data when we have it but that's
-      // wasteful -- we'll already be burning enough battery as it is.
-      metalView.isPaused = true
-      metalView.enableSetNeedsDisplay = false
+    if device == nil {
+      print("Error: this device does not support Metal")
+      return
     }
+
+    videoCapture = VideoCapture(device: device, delegate: self)
+    visualize = Visualize(device: device, view: metalView)
+
+    metalView.clearColor = MTLClearColor(red: 20/255, green: 30/255, blue: 40/255, alpha: 1)
+    metalView.device = device
+    metalView.delegate = self
+
+    // Normally the MTKView asks for a redraw 60 times per second. But we're
+    // going to give it new textures at a much lower rate, so we'll manually 
+    // tell the view when to redraw. Another option would be to redraw at, 
+    // say 30 FPS, and only give the view new data when we have it but that's
+    // wasteful -- we'll already be burning enough battery as it is.
+    metalView.isPaused = true
+    metalView.enableSetNeedsDisplay = false
+
+    let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(swipedLeft))
+    swipeLeft.direction = .left
+    view.addGestureRecognizer(swipeLeft)
+
+    let swipeRight = UISwipeGestureRecognizer(target: self, action: #selector(swipedRight))
+    swipeRight.direction = .right
+    view.addGestureRecognizer(swipeRight)
   }
 
   override func viewWillLayoutSubviews() {
@@ -48,15 +60,13 @@ class CameraViewController: UIViewController {
     frame.size.height = view.bounds.height
     scrollView.frame = frame
 
-    metalView.frame = CGRect(x: 0, y: 0, width: width, height: 224*17 / view.window!.screen.scale)
-    scrollView.contentSize = metalView.bounds.size
-
     frame = videoPreview.frame
     frame.size.width = scrollView.frame.origin.x
     frame.size.height = frame.size.width * 3 / 4
     videoPreview.frame = frame
 
     resizePreviewLayer()
+    updatePanelLabel()
   }
 
   override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -69,14 +79,31 @@ class CameraViewController: UIViewController {
   }
 
   func resizePreviewLayer() {
-    videoCapture?.previewLayer?.frame = videoPreview.bounds
+    videoCapture.previewLayer?.frame = videoPreview.bounds
   }
 
-  /*
-  @IBAction func buttonTapped(_ sender: UIButton) {
-    videoCapture.capturePhoto()
+  // MARK: - Panels
+
+  func updatePanelLabel() {
+    panelLabel.text = visualize.activePanel.name
+    panelLabel.sizeToFit()
+
+    let size = visualize.activePanel.contentSize
+    let width = size.width / view.window!.screen.scale
+    let height = size.height / view.window!.screen.scale
+    metalView.frame = CGRect(x: 0, y: 0, width: width, height: height)
+    scrollView.contentSize = metalView.bounds.size
   }
-  */
+
+  func swipedLeft(_ gestureRecognizer: UISwipeGestureRecognizer) {
+    visualize.activateNextPanel()
+    updatePanelLabel()
+  }
+
+  func swipedRight(_ gestureRecognizer: UISwipeGestureRecognizer) {
+    visualize.activatePreviousPanel()
+    updatePanelLabel()
+  }
 }
 
 extension CameraViewController: VideoCaptureDelegate {
@@ -109,11 +136,7 @@ extension CameraViewController: VideoCaptureDelegate {
   }
 
   func videoCapture(_ capture: VideoCapture, didCapturePhotoTexture texture: MTLTexture?, previewImage: UIImage?) {
-    /*if let texture = texture, let previewImage = previewImage {
-      predict(texture: texture, previewImage: previewImage, bgr: true)
-    } else {
-      imageView.image = nil
-    }*/
+    // not implemented
   }
 }
 

@@ -13,6 +13,7 @@
 		7B5782471E93B06800555E30 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7B5782461E93B06800555E30 /* Assets.xcassets */; };
 		7B57824A1E93B06800555E30 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7B5782481E93B06800555E30 /* LaunchScreen.storyboard */; };
 		7B5782521E93B08800555E30 /* VideoCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B5782511E93B08800555E30 /* VideoCapture.swift */; };
+		7B60D6B71E9A5E240091E860 /* Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B60D6B61E9A5E240091E860 /* Panel.swift */; };
 		7B99D7F41E97C2FF0003349B /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 7B99D7F31E97C2FF0003349B /* Shaders.metal */; };
 		7B99D7F61E97C7190003349B /* TexturedQuad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B99D7F51E97C7190003349B /* TexturedQuad.swift */; };
 		7B99D7F81E97D2610003349B /* Math.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B99D7F71E97D2610003349B /* Math.swift */; };
@@ -34,6 +35,7 @@
 		7B5782491E93B06800555E30 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7B57824B1E93B06800555E30 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7B5782511E93B08800555E30 /* VideoCapture.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VideoCapture.swift; sourceTree = "<group>"; };
+		7B60D6B61E9A5E240091E860 /* Panel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Panel.swift; sourceTree = "<group>"; };
 		7B99D7F31E97C2FF0003349B /* Shaders.metal */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		7B99D7F51E97C7190003349B /* TexturedQuad.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TexturedQuad.swift; sourceTree = "<group>"; };
 		7B99D7F71E97D2610003349B /* Math.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Math.swift; sourceTree = "<group>"; };
@@ -80,6 +82,7 @@
 				7B5782411E93B06800555E30 /* CameraViewController.swift */,
 				7B5782511E93B08800555E30 /* VideoCapture.swift */,
 				7BCB016B1E99325300A367B1 /* Visualize.swift */,
+				7B60D6B61E9A5E240091E860 /* Panel.swift */,
 				7BCB016A1E9931D900A367B1 /* VGGNet */,
 				7BCB01671E99309000A367B1 /* Metal Helpers */,
 				7B5782531E93B09D00555E30 /* Resources */,
@@ -198,6 +201,7 @@
 			files = (
 				7B99D7F61E97C7190003349B /* TexturedQuad.swift in Sources */,
 				7B99D7F41E97C2FF0003349B /* Shaders.metal in Sources */,
+				7B60D6B71E9A5E240091E860 /* Panel.swift in Sources */,
 				7BCB01701E9950BC00A367B1 /* VGGNetData.swift in Sources */,
 				7B5782421E93B06800555E30 /* CameraViewController.swift in Sources */,
 				7BCB01691E99309C00A367B1 /* ComputeHelpers.swift in Sources */,

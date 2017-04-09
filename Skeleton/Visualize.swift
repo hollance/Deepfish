@@ -53,6 +53,8 @@ class Visualize {
 
   let norm1: MPSCNNPoolingMax
 
+  var panels: [Panel] = []
+  var activePanelIndex = 0
   var quads: QuadRenderer!
 
   init(device: MTLDevice, view: MTKView) {
@@ -87,23 +89,55 @@ class Visualize {
     norm1.offset = MPSOffset(x: 112, y: 112, z: 0)
 
     quads = QuadRenderer(device: device, pixelFormat: view.colorPixelFormat, maxQuads: MaxQuads, inflightCount: MaxFramesInFlight)
-    createQuads()
+
+    createPanels()
   }
 
-  func createQuads() {
-    quads.add(TexturedQuad(position: [112, 112, 0], size: 224))
-    quads.add(TexturedQuad(position: [336, 112, 0], size: 224))
+  func createPanels() {
+    var panel = Panel()
+    panel.name = "Input"
+    panel.add(TexturedQuad(position: [112, 112, 0], size: 224))
+    panel.add(TexturedQuad(position: [336, 112, 0], size: 224))
+    panel.contentSize = CGSize(width: 224*2, height: 224)
+    panels.append(panel)
 
-    // 64 channels in conv1_1
+    panel = Panel()
+    panel.name = "Conv1.1"
     for j in 0..<16 {
       for i in 0..<4 {
-        let y = Float(112 + (j + 1) * 224)
+        let y = Float(112 + j * 224)
         let x = Float(112 + i * 224)
         let quad = TexturedQuad(position: [x, y, 0], size: 224)
         quad.isArray = true
         quad.channel = j*4 + i
-        quads.add(quad)
+        panel.add(quad)
       }
+    }
+    panel.contentSize = CGSize(width: 224*4, height: 224*16)
+    panels.append(panel)
+
+    panel = Panel()
+    panel.name = "Conv1.2"
+    panels.append(panel)
+
+    panel = Panel()
+    panel.name = "Pool1"
+    panels.append(panel)
+  }
+
+  var activePanel: Panel {
+    return panels[activePanelIndex]
+  }
+
+  func activatePreviousPanel() {
+    if activePanelIndex > 0 {
+      activePanelIndex -= 1
+    }
+  }
+
+  func activateNextPanel() {
+    if activePanelIndex < panels.count - 1 {
+      activePanelIndex += 1
     }
   }
 
@@ -134,9 +168,10 @@ class Visualize {
 
       subtractMeanColor.encode(commandBuffer: commandBuffer, sourceTexture: img1.texture, destinationTexture: img2.texture)
 
-      conv1_1.encode(commandBuffer: commandBuffer, sourceImage: img2, destinationImage: img3)
-
-      norm1.encode(commandBuffer: commandBuffer, sourceImage: img3, destinationImage: img4)
+      if activePanelIndex >= 1 {
+        conv1_1.encode(commandBuffer: commandBuffer, sourceImage: img2, destinationImage: img3)
+        norm1.encode(commandBuffer: commandBuffer, sourceImage: img3, destinationImage: img4)
+      }
     }
 
     if let renderPassDescriptor = view.currentRenderPassDescriptor,
@@ -144,18 +179,16 @@ class Visualize {
 
       let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
 
-      quads[0].texture = img1.texture
-      quads[1].texture = img2.texture
-
-      // Note: theoretically we could draw all of these quads with a single
-      // draw call, since they all use the same texture. But Metal prides 
-      // itself on being able to do a lot of draw calls, so this is just as
-      // easy. We also don't care about only encoding quads that are visible. 
-      for i in 0..<64 {
-        quads[i + 2].texture = img3.texture
-        quads[i + 2].max = img4.texture
+      if activePanelIndex == 0 {
+        panels[0].set(texture: img1.texture, forQuadAt: 0)
+        panels[0].set(texture: img2.texture, forQuadAt: 1)
       }
-      quads.encode(renderEncoder, matrix: projectionMatrix, for: inflightIndex)
+
+      if activePanelIndex == 1 {
+        panels[1].set(texture: img3.texture, max: img4.texture)
+      }
+
+      quads.encode(renderEncoder, quads: activePanel.quads, matrix: projectionMatrix, for: inflightIndex)
 
       renderEncoder.endEncoding()
       commandBuffer.present(currentDrawable)

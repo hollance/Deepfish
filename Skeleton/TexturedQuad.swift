@@ -40,8 +40,6 @@ class QuadRenderer {
   let vertexUniformBuffer: MTLBuffer
   let fragmentUniformBuffer: MTLBuffer
 
-  private(set) var quads: [TexturedQuad] = []
-
   init(device: MTLDevice, pixelFormat: MTLPixelFormat, maxQuads: Int, inflightCount: Int) {
     self.maxQuads = maxQuads
     self.inflightCount = inflightCount
@@ -71,20 +69,12 @@ class QuadRenderer {
     fragmentUniformBuffer = device.makeBuffer(length: MemoryLayout<FragmentUniform>.stride * maxQuads * inflightCount)
   }
 
-  func add(_ quad: TexturedQuad) {
-    if quads.count < maxQuads {
-      quads.append(quad)
-    } else {
-      print("Too many quads!")
-    }
-  }
-
-  subscript(i: Int) -> TexturedQuad {
-    return quads[i]
-  }
-
-  func encode(_ encoder: MTLRenderCommandEncoder, matrix: float4x4, for inflightIndex: Int) {
+  func encode(_ encoder: MTLRenderCommandEncoder, quads: [TexturedQuad], matrix: float4x4, for inflightIndex: Int) {
     for (quadIndex, quad) in quads.enumerated() {
+      if quadIndex >= maxQuads {
+        print("Too many quads!")
+        return
+      }
 
       // Position the quad. The quad's origin is in its center. Its size goes
       // from -0.5 to +0.5, so we should scale it to the actual size in pixels.

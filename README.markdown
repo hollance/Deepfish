@@ -9,3 +9,5 @@ Things that need work:
 - The camera code does not handle interruptions, going to the background, etc. In a production quality app these sorts of loose ends need to be tied up.
 
 - There may be glitches between how the frames from the video stream are sent to Metal. I did not think this through very carefully yet.
+
+- The UI to swipe between panels needs work (some kind of visual feedback).
