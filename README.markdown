@@ -42,3 +42,5 @@ We're using configuration D from the paper, as found in the [Caffe Model Zoo](ht
 - The fully-connected layers use a ReLU activation, except for the last one which applies the softmax function to produce a probability distribution.
 
 See also my [VGGNet+Metal](https://github.com/hollance/VGGNet-Metal) repo for an example app that uses VGGNet for image classification.
+
+The cat.jpg image is taken from the [Caffe](https://github.com/BVLC/caffe) examples folder.

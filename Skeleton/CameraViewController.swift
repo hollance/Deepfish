@@ -135,7 +135,8 @@ extension CameraViewController: VideoCaptureDelegate {
     // instance that is currently being used for drawing -- but that shouldn't
     // happen.
     DispatchQueue.main.async {
-      self.visualize?.videoTexture = texture
+      self.visualize.videoTexture = texture
+      self.visualize.channelOrderBGR = true
       self.metalView.draw()
     }
   }

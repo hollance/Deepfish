@@ -65,6 +65,7 @@ class Visualize {
 
   // The video frame that we feed into the neural network
   var videoTexture: MTLTexture?
+  var channelOrderBGR = false
 
   let inputImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 3)
   let conv1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 64)
@@ -104,7 +105,7 @@ class Visualize {
     self.device = device
     commandQueue = device.makeCommandQueue()
 
-    videoTexture = loadTexture(named: "sophie.png")!
+    videoTexture = loadTexture(named: "cat.jpg")!
 
     imgScaled = MPSImage(device: device, imageDescriptor: inputImgDesc)
     imgMeanAdjusted = MPSImage(device: device, imageDescriptor: inputImgDesc)
@@ -192,7 +193,7 @@ class Visualize {
     if let inputTexture = videoTexture {
       lanczos.encode(commandBuffer: commandBuffer, sourceTexture: inputTexture, destinationTexture: imgScaled.texture)
 
-      subtractMeanColor.encode(commandBuffer: commandBuffer, sourceTexture: imgScaled.texture, destinationTexture: imgMeanAdjusted.texture)
+      subtractMeanColor.encode(commandBuffer: commandBuffer, sourceTexture: imgScaled.texture, destinationTexture: imgMeanAdjusted.texture, channelOrderBGR: channelOrderBGR)
 
       if activePanelIndex >= 1 {
         conv1_1.encode(commandBuffer: commandBuffer, sourceImage: imgMeanAdjusted, destinationImage: imgConv1_1)
