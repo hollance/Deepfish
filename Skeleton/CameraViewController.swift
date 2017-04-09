@@ -8,6 +8,7 @@ import QuartzCore
 class CameraViewController: UIViewController {
 
   @IBOutlet weak var videoPreview: UIView!
+  @IBOutlet weak var scrollView: UIScrollView!
   @IBOutlet weak var metalView: MTKView!
 
   var videoCapture: VideoCapture?
@@ -23,7 +24,7 @@ class CameraViewController: UIViewController {
       videoCapture = VideoCapture(device: device, delegate: self)
       visualize = Visualize(device: device, view: metalView)
 
-      metalView.clearColor = MTLClearColor(red: 0, green: 0.5, blue: 0.5, alpha: 1)
+      metalView.clearColor = MTLClearColor(red: 20/255, green: 30/255, blue: 40/255, alpha: 1)
       metalView.device = device
       metalView.delegate = self
 
@@ -41,14 +42,17 @@ class CameraViewController: UIViewController {
     super.viewWillLayoutSubviews()
 
     let width: CGFloat = 224*4 / view.window!.screen.scale
-    var frame = metalView.frame
+    var frame = scrollView.frame
     frame.origin.x = view.bounds.width - width
     frame.size.width = width
     frame.size.height = view.bounds.height
-    metalView.frame = frame
+    scrollView.frame = frame
+
+    metalView.frame = CGRect(x: 0, y: 0, width: width, height: 224*17 / view.window!.screen.scale)
+    scrollView.contentSize = metalView.bounds.size
 
     frame = videoPreview.frame
-    frame.size.width = metalView.frame.origin.x
+    frame.size.width = scrollView.frame.origin.x
     frame.size.height = frame.size.width * 3 / 4
     videoPreview.frame = frame
 

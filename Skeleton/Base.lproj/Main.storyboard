@@ -22,17 +22,24 @@
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                 <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                             </view>
-                            <view contentMode="scaleToFill" id="DCa-Uf-yPL" customClass="MTKView">
+                            <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" id="9E1-As-W4h">
                                 <rect key="frame" x="284" y="0.0" width="284" height="320"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                <color key="backgroundColor" red="1" green="0.61522660510000005" blue="0.38257662650000002" alpha="1" colorSpace="calibratedRGB"/>
-                            </view>
+                                <subviews>
+                                    <view contentMode="scaleToFill" misplaced="YES" id="DCa-Uf-yPL" customClass="MTKView">
+                                        <rect key="frame" x="0.0" y="0.0" width="284" height="320"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                        <color key="backgroundColor" red="1" green="0.61522660510000005" blue="0.38257662650000002" alpha="1" colorSpace="calibratedRGB"/>
+                                    </view>
+                                </subviews>
+                            </scrollView>
                         </subviews>
                         <color key="backgroundColor" red="0.078431372549019607" green="0.11764705882352941" blue="0.15686274509803921" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </view>
                     <simulatedStatusBarMetrics key="simulatedStatusBarMetrics" statusBarStyle="lightContent"/>
                     <connections>
                         <outlet property="metalView" destination="DCa-Uf-yPL" id="tu4-wd-UKs"/>
+                        <outlet property="scrollView" destination="9E1-As-W4h" id="QDE-4I-xC6"/>
                         <outlet property="videoPreview" destination="bCL-P6-Xzi" id="Xly-Sv-V4J"/>
                     </connections>
                 </viewController>
