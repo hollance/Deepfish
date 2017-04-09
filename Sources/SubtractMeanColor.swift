@@ -7,8 +7,8 @@ class SubtractMeanColor {
 
   init(device: MTLDevice) {
     self.device = device
-    pipelineRGB = makeFunction(device: device, name: "adjust_mean_rgb")
-    pipelineBGR = makeFunction(device: device, name: "adjust_mean_bgr")
+    pipelineRGB = makeFunction(device: device, name: "subtractMeanRGB")
+    pipelineBGR = makeFunction(device: device, name: "subtractMeanBGR")
   }
 
   func encode(commandBuffer: MTLCommandBuffer, sourceTexture: MTLTexture, destinationTexture: MTLTexture, channelOrderBGR: Bool) {

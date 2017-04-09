@@ -67,19 +67,22 @@ fragment half4 fragmentFuncA(
   return outColor;
 };
 
-
-kernel void adjust_mean_rgb(texture2d<float, access::read> inTexture [[texture(0)]],
-                            texture2d<float, access::write> outTexture [[texture(1)]],
-                            uint2 gid [[thread_position_in_grid]]) {
-  float4 inColor = inTexture.read(gid);
-  float4 outColor = float4(inColor.z*255.0 - 103.939, inColor.y*255.0 - 116.779, inColor.x*255.0 - 123.68, 0.0);
+kernel void subtractMeanRGB(
+  texture2d<half, access::read> inTexture [[texture(0)]],
+  texture2d<half, access::write> outTexture [[texture(1)]],
+  uint2 gid [[thread_position_in_grid]])
+{
+  half4 inColor = inTexture.read(gid);
+  half4 outColor = half4(inColor.z*255.0h - 103.939h, inColor.y*255.0h - 116.779h, inColor.x*255.0h - 123.68h, 0.0h);
   outTexture.write(outColor, gid);
 }
 
-kernel void adjust_mean_bgr(texture2d<half, access::read> inTexture [[texture(0)]],
-                            texture2d<half, access::write> outTexture [[texture(1)]],
-                            uint2 gid [[thread_position_in_grid]]) {
+kernel void subtractMeanBGR(
+  texture2d<half, access::read> inTexture [[texture(0)]],
+  texture2d<half, access::write> outTexture [[texture(1)]],
+  uint2 gid [[thread_position_in_grid]])
+{
   half4 inColor = inTexture.read(gid);
-  half4 outColor = half4(inColor.x*255.0h - 103.939h, inColor.y*255.0h - 116.779h, inColor.z*255.0h - 123.68h, 1.0h);
+  half4 outColor = half4(inColor.x*255.0h - 103.939h, inColor.y*255.0h - 116.779h, inColor.z*255.0h - 123.68h, 0.0h);
   outTexture.write(outColor, gid);
 }

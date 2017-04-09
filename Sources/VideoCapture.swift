@@ -3,20 +3,15 @@ import AVFoundation
 import CoreVideo
 import Metal
 
-/*
-  Simple interface to the iPhone's camera.
-  
-  TODO: 
-    - need to handle going to background and other interruptions
-    - need more flexibility in choosing format, FPS, etc
-*/
-
 public protocol VideoCaptureDelegate: class {
   func videoCapture(_ capture: VideoCapture, didInitializeWithSuccess success: Bool)
   func videoCapture(_ capture: VideoCapture, didCaptureVideoTexture texture: MTLTexture?, timestamp: CMTime)
   func videoCapture(_ capture: VideoCapture, didCapturePhotoTexture texture: MTLTexture?, previewImage: UIImage?)
 }
 
+/**
+  Simple interface to the iPhone's camera.
+*/
 public class VideoCapture: NSObject {
 
   public var previewLayer: AVCaptureVideoPreviewLayer?
@@ -90,20 +85,6 @@ public class VideoCapture: NSObject {
     }
 
     captureSession.commitConfiguration()
-
-    /*
-    // This sets the framerate to the minimum available. However, this
-    // also changes the framerate of the preview, which is ugly.
-    if let _ = try? captureDevice.lockForConfiguration() {
-      let ranges = captureDevice.activeFormat.videoSupportedFrameRateRanges as! [AVFrameRateRange]
-      let minFrameRate = Int32(ranges.first!.minFrameRate)
-
-      captureDevice.activeVideoMaxFrameDuration = CMTimeMake(1, minFrameRate)
-      captureDevice.activeVideoMinFrameDuration = CMTimeMake(1, minFrameRate)
-      captureDevice.unlockForConfiguration()
-    }
-    */
-
     return true
   }
 
