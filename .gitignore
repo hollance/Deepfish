@@ -1,5 +1,4 @@
 # Don't include these files
-parameters.data
 caffe.proto
 
 # Xcode
