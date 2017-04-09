@@ -5,8 +5,23 @@ import UIKit
 
 class Panel {
   var name = ""
+  var extraInfo = ""
   var contentSize = CGSize.zero
   private(set) var quads: [TexturedQuad] = []
+
+  func configure(extent: Int, rows: Int, columns: Int) {
+    for j in 0..<rows {
+      for i in 0..<columns {
+        let y = Float(extent/2 + j * extent)
+        let x = Float(extent/2 + i * extent)
+        let quad = TexturedQuad(position: [x, y, 0], size: Float(extent))
+        quad.isArray = true
+        quad.channel = j*columns + i
+        add(quad)
+      }
+    }
+    contentSize = CGSize(width: extent*columns, height: extent*rows)
+  }
 
   func add(_ quad: TexturedQuad) {
     quads.append(quad)

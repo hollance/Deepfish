@@ -28,6 +28,34 @@ private func makeConv(device: MTLDevice,
   return conv
 }
 
+private func makePool(device: MTLDevice) -> MPSCNNPoolingMax {
+  let pool = MPSCNNPoolingMax(device: device,
+                              kernelWidth: 2,
+                              kernelHeight: 2,
+                              strideInPixelsX: 2,
+                              strideInPixelsY: 2)
+  pool.offset = MPSOffset(x: 1, y: 1, z: 0)
+  return pool
+}
+
+private func makeNorm(device: MTLDevice, extent: Int) -> MPSCNNPoolingMax {
+  // The output of a conv layer is between 0 and any positive number (no
+  // negative numbers because of the ReLU). We need to scale this down to
+  // the range [0, 1]. To find the maximum value in each channel, we can
+  // send the conv layer output through a max-pool layer that covers the
+  // entire spatial extent. Then in the shader we divide the activations
+  // by this max value. This makes the neural network a little slower but
+  // otherwise the visualizations wouldn't make any sense.
+
+  let norm = MPSCNNPoolingMax(device: device,
+                              kernelWidth: extent,
+                              kernelHeight: extent,
+                              strideInPixelsX: extent,
+                              strideInPixelsY: extent)
+  norm.offset = MPSOffset(x: extent/2, y: extent/2, z: 0)
+  return norm
+}
+
 class Visualize {
   let device: MTLDevice
   let commandQueue: MTLCommandQueue
@@ -39,23 +67,31 @@ class Visualize {
 
   let inputImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 3)
   let conv1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 64)
-  let norm1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 1, height: 1, featureChannels: 64)
+  let pool1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 112, height: 112, featureChannels: 64)
+  let norm1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width:   1, height:   1, featureChannels: 64)
 
   let img1: MPSImage
   let img2: MPSImage
   let img3: MPSImage
   let img4: MPSImage
+  let img5: MPSImage
+  let img6: MPSImage
+  let img7: MPSImage
+  let img8: MPSImage
 
   let lanczos: MPSImageLanczosScale
   let subtractMeanColor: SubtractMeanColor
 
   let conv1_1: MPSCNNConvolution  // 224x224x3  input, 64 kernels (3x3x3x64  = 1728  weights + 64 bias)
-
-  let norm1: MPSCNNPoolingMax
+  let norm1_1: MPSCNNPoolingMax
+  let conv1_2: MPSCNNConvolution  // 224x224x64 input, 64 kernels (3x3x64x64 = 36864 weights + 64 bias)
+  let norm1_2: MPSCNNPoolingMax
+  let pool1  : MPSCNNPoolingMax   // 224x224x64 input -> 112x112x64 output
+  let norm1_3: MPSCNNPoolingMax
 
   var panels: [Panel] = []
   var activePanelIndex = 0
-  var quads: QuadRenderer!
+  var renderer: QuadRenderer
 
   init(device: MTLDevice, view: MTKView) {
     self.device = device
@@ -67,6 +103,10 @@ class Visualize {
     img2 = MPSImage(device: device, imageDescriptor: inputImgDesc)
     img3 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
     img4 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
+    img5 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
+    img6 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
+    img7 = MPSImage(device: device, imageDescriptor: pool1ImgDesc)
+    img8 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
 
     lanczos = MPSImageLanczosScale(device: device)
     subtractMeanColor = SubtractMeanColor(device: device)
@@ -77,18 +117,13 @@ class Visualize {
     }
 
     conv1_1 = makeConv(device: device, inDepth:   3, outDepth:  64, weights: blob.conv1_1_w, bias: blob.conv1_1_b)
+    norm1_1 = makeNorm(device: device, extent: 224)
+    conv1_2 = makeConv(device: device, inDepth:  64, outDepth:  64, weights: blob.conv1_2_w, bias: blob.conv1_2_b)
+    norm1_2 = makeNorm(device: device, extent: 224)
+    pool1   = makePool(device: device)
+    norm1_3 = makeNorm(device: device, extent: 112)
 
-    // The output of a conv layer is between 0 and any positive number (no
-    // negative numbers because of the ReLU). We need to scale this down to
-    // the range [0, 1]. To find the maximum value in each channel, we can
-    // send the conv layer output through a max-pool layer that covers the
-    // entire spatial extent. Then in the shader we divide the activations
-    // by this max value.
-    norm1 = MPSCNNPoolingMax(device: device, kernelWidth: 224, kernelHeight: 224,
-                             strideInPixelsX: 224, strideInPixelsY: 224)
-    norm1.offset = MPSOffset(x: 112, y: 112, z: 0)
-
-    quads = QuadRenderer(device: device, pixelFormat: view.colorPixelFormat, maxQuads: MaxQuads, inflightCount: MaxFramesInFlight)
+    renderer = QuadRenderer(device: device, pixelFormat: view.colorPixelFormat, maxQuads: MaxQuads, inflightCount: MaxFramesInFlight)
 
     createPanels()
   }
@@ -96,6 +131,7 @@ class Visualize {
   func createPanels() {
     var panel = Panel()
     panel.name = "Input"
+    panel.extraInfo = "224×224 image, 3 channels"
     panel.add(TexturedQuad(position: [112, 112, 0], size: 224))
     panel.add(TexturedQuad(position: [336, 112, 0], size: 224))
     panel.contentSize = CGSize(width: 224*2, height: 224)
@@ -103,25 +139,20 @@ class Visualize {
 
     panel = Panel()
     panel.name = "Conv1.1"
-    for j in 0..<16 {
-      for i in 0..<4 {
-        let y = Float(112 + j * 224)
-        let x = Float(112 + i * 224)
-        let quad = TexturedQuad(position: [x, y, 0], size: 224)
-        quad.isArray = true
-        quad.channel = j*4 + i
-        panel.add(quad)
-      }
-    }
-    panel.contentSize = CGSize(width: 224*4, height: 224*16)
+    panel.extraInfo = "224×224 image, 64 channels"
+    panel.configure(extent: 224, rows: 16, columns: 4)
     panels.append(panel)
 
     panel = Panel()
     panel.name = "Conv1.2"
+    panel.extraInfo = "224×224 image, 64 channels"
+    panel.configure(extent: 224, rows: 16, columns: 4)
     panels.append(panel)
 
     panel = Panel()
     panel.name = "Pool1"
+    panel.extraInfo = "112×112 image, 64 channels"
+    panel.configure(extent: 112, rows: 8, columns: 8)
     panels.append(panel)
   }
 
@@ -170,7 +201,23 @@ class Visualize {
 
       if activePanelIndex >= 1 {
         conv1_1.encode(commandBuffer: commandBuffer, sourceImage: img2, destinationImage: img3)
-        norm1.encode(commandBuffer: commandBuffer, sourceImage: img3, destinationImage: img4)
+        if activePanelIndex == 1 {
+          norm1_1.encode(commandBuffer: commandBuffer, sourceImage: img3, destinationImage: img4)
+        }
+      }
+
+      if activePanelIndex >= 2 {
+        conv1_2.encode(commandBuffer: commandBuffer, sourceImage: img3, destinationImage: img5)
+        if activePanelIndex == 2 {
+          norm1_2.encode(commandBuffer: commandBuffer, sourceImage: img5, destinationImage: img6)
+        }
+      }
+
+      if activePanelIndex >= 3 {
+        pool1.encode(commandBuffer: commandBuffer, sourceImage: img5, destinationImage: img7)
+        if activePanelIndex == 3 {
+          norm1_3.encode(commandBuffer: commandBuffer, sourceImage: img7, destinationImage: img8)
+        }
       }
     }
 
@@ -180,15 +227,20 @@ class Visualize {
       let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
 
       if activePanelIndex == 0 {
-        panels[0].set(texture: img1.texture, forQuadAt: 0)
-        panels[0].set(texture: img2.texture, forQuadAt: 1)
+        panels[activePanelIndex].set(texture: img1.texture, forQuadAt: 0)
+        panels[activePanelIndex].set(texture: img2.texture, forQuadAt: 1)
       }
-
       if activePanelIndex == 1 {
-        panels[1].set(texture: img3.texture, max: img4.texture)
+        panels[activePanelIndex].set(texture: img3.texture, max: img4.texture)
+      }
+      if activePanelIndex == 2 {
+        panels[activePanelIndex].set(texture: img5.texture, max: img6.texture)
+      }
+      if activePanelIndex == 3 {
+        panels[activePanelIndex].set(texture: img7.texture, max: img8.texture)
       }
 
-      quads.encode(renderEncoder, quads: activePanel.quads, matrix: projectionMatrix, for: inflightIndex)
+      renderer.encode(renderEncoder, quads: activePanel.quads, matrix: projectionMatrix, for: inflightIndex)
 
       renderEncoder.endEncoding()
       commandBuffer.present(currentDrawable)
@@ -197,7 +249,6 @@ class Visualize {
     // When this command buffer is done, wake up the next waiting thread.
     commandBuffer.addCompletedHandler { [weak self] commandBuffer in
       let elapsed = CACurrentMediaTime() - startTime
-      print("Took \(elapsed) seconds")
       DispatchQueue.main.async { callback(elapsed) }
 
       if let strongSelf = self {

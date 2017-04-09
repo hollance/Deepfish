@@ -30,7 +30,7 @@ public class VideoCapture: NSObject {
   let queue = DispatchQueue(label: "net.machinethink.camera-queue")
 
   var lastTimestamp = CMTime()
-  let FPS = 15
+  let FPS = 10
 
   public init(device: MTLDevice, delegate: VideoCaptureDelegate) {
     self.device = device
@@ -179,7 +179,7 @@ extension VideoCapture: AVCaptureVideoDataOutputSampleBufferDelegate {
 
     let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
     let deltaTime = timestamp - lastTimestamp
-    if true || deltaTime >= CMTimeMake(1, Int32(FPS)) {
+    if /*true ||*/ deltaTime >= CMTimeMake(1, Int32(FPS)) {
       lastTimestamp = timestamp
 
       let texture = convertToMTLTexture(sampleBuffer: sampleBuffer)

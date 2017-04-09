@@ -9,6 +9,7 @@ class CameraViewController: UIViewController {
 
   @IBOutlet weak var videoPreview: UIView!
   @IBOutlet weak var panelLabel: UILabel!
+  @IBOutlet weak var detailsLabel: UILabel!
   @IBOutlet weak var timeLabel: UILabel!
 
   @IBOutlet weak var scrollView: UIScrollView!
@@ -69,7 +70,7 @@ class CameraViewController: UIViewController {
     videoPreview.frame = frame
 
     resizePreviewLayer()
-    updatePanelLabel()
+    updatePanel()
   }
 
   override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -87,25 +88,26 @@ class CameraViewController: UIViewController {
 
   // MARK: - Panels
 
-  func updatePanelLabel() {
+  func updatePanel() {
     panelLabel.text = visualize.activePanel.name
-    panelLabel.sizeToFit()
+    detailsLabel.text = visualize.activePanel.extraInfo
 
     let size = visualize.activePanel.contentSize
     let width = size.width / view.window!.screen.scale
     let height = size.height / view.window!.screen.scale
     metalView.frame = CGRect(x: 0, y: 0, width: width, height: height)
     scrollView.contentSize = metalView.bounds.size
+    scrollView.contentOffset = .zero
   }
 
   func swipedLeft(_ gestureRecognizer: UISwipeGestureRecognizer) {
     visualize.activateNextPanel()
-    updatePanelLabel()
+    updatePanel()
   }
 
   func swipedRight(_ gestureRecognizer: UISwipeGestureRecognizer) {
     visualize.activatePreviousPanel()
-    updatePanelLabel()
+    updatePanel()
   }
 }
 
