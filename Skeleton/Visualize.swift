@@ -77,15 +77,16 @@ class Visualize {
 
   func createQuads() {
     quads.add(TexturedQuad(position: [112, 112, 0], size: 224))
-    quads.add(TexturedQuad(position: [338, 112, 0], size: 224))
+    quads.add(TexturedQuad(position: [336, 112, 0], size: 224))
 
-    for i in 0..<3 {
-      for j in 0..<3 {
-        let y = Float(112 + (i + 1) * (224 + 2))
-        let x = Float(112 + j * (224 + 2))
+    // 64 channels in conv1_1
+    for j in 0..<16 {
+      for i in 0..<4 {
+        let y = Float(112 + (j + 1) * 224)
+        let x = Float(112 + i * 224)
         let quad = TexturedQuad(position: [x, y, 0], size: 224)
         quad.isArray = true
-        quad.channel = i*3 + j
+        quad.channel = j*4 + i
         quads.add(quad)
       }
     }
@@ -128,7 +129,12 @@ class Visualize {
 
       quads[0].texture = img1.texture
       quads[1].texture = img2.texture
-      for i in 0..<9 {
+
+      // Note: theoretically we could draw all of these quads with a single
+      // draw call, since they all use the same texture. But Metal prides 
+      // itself on being able to do a lot of draw calls, so this is just as
+      // easy. We also don't care about only encoding quads that are visible. 
+      for i in 0..<64 {
         quads[i + 2].texture = img3.texture
       }
       quads.encode(renderEncoder, matrix: projectionMatrix, for: inflightIndex)

@@ -39,6 +39,19 @@ class CameraViewController: UIViewController {
 
   override func viewWillLayoutSubviews() {
     super.viewWillLayoutSubviews()
+
+    let width: CGFloat = 224*4 / view.window!.screen.scale
+    var frame = metalView.frame
+    frame.origin.x = view.bounds.width - width
+    frame.size.width = width
+    frame.size.height = view.bounds.height
+    metalView.frame = frame
+
+    frame = videoPreview.frame
+    frame.size.width = metalView.frame.origin.x
+    frame.size.height = frame.size.width * 3 / 4
+    videoPreview.frame = frame
+
     resizePreviewLayer()
   }
 
