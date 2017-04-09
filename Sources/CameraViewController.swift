@@ -33,7 +33,8 @@ class CameraViewController: UIViewController {
 
     videoCapture = VideoCapture(device: device, delegate: self)
     visualize = Visualize(device: device, view: metalView)
-    visualize.videoTexture = defaultTexture
+
+    imageView.isHidden = true
 
     metalView.clearColor = MTLClearColor(red: 20/255, green: 30/255, blue: 40/255, alpha: 1)
     metalView.device = device
@@ -98,6 +99,7 @@ class CameraViewController: UIViewController {
   func previewTapped(_ gestureRecognizer: UITapGestureRecognizer) {
     useCamera = !useCamera
     videoCapture.previewLayer!.isHidden = !useCamera
+    imageView.isHidden = useCamera
     if !useCamera {
       visualize.videoTexture = defaultTexture
       visualize.channelOrderBGR = false
