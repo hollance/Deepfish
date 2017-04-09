@@ -19,7 +19,7 @@ struct FragmentUniform {
 
 class TexturedQuad {
   var position = float3()
-  var size: Float = 100
+  var size: Float = 100     // in pixels, not points!
   var texture: MTLTexture?
   var max: MTLTexture?      // for normalizing
   var isArray = false

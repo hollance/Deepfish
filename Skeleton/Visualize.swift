@@ -60,28 +60,35 @@ class Visualize {
   let device: MTLDevice
   let commandQueue: MTLCommandQueue
 
-  var videoTexture: MTLTexture?
-
   let inflightSemaphore = DispatchSemaphore(value: MaxFramesInFlight)
   var inflightIndex = 0
+
+  // The video frame that we feed into the neural network
+  var videoTexture: MTLTexture?
 
   let inputImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 3)
   let conv1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 64)
   let pool1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 112, height: 112, featureChannels: 64)
   let norm1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width:   1, height:   1, featureChannels: 64)
 
-  let img1: MPSImage
-  let img2: MPSImage
-  let img3: MPSImage
-  let img4: MPSImage
-  let img5: MPSImage
-  let img6: MPSImage
-  let img7: MPSImage
-  let img8: MPSImage
+  // The images that store the outputs of the layers.
+  // Normally you'd use MPSTemporaryImage objects for speed and space reasons
+  // but since we want to show these textures inside a render pass, we keep to
+  // use regular MPSImage objects otherwise these textures get reused. (To be
+  // fair, we really only need to keep the final images, so MPSTemporaryImages
+  // would actually work. TODO: FIX)
+  let imgScaled: MPSImage
+  let imgMeanAdjusted: MPSImage
+  let imgConv1_1: MPSImage
+  let imgNorm1_1: MPSImage
+  let imgConv1_2: MPSImage
+  let imgNorm1_2: MPSImage
+  let imgPool1: MPSImage
+  let imgNorm1_3: MPSImage
 
+  // The layers
   let lanczos: MPSImageLanczosScale
   let subtractMeanColor: SubtractMeanColor
-
   let conv1_1: MPSCNNConvolution  // 224x224x3  input, 64 kernels (3x3x3x64  = 1728  weights + 64 bias)
   let norm1_1: MPSCNNPoolingMax
   let conv1_2: MPSCNNConvolution  // 224x224x64 input, 64 kernels (3x3x64x64 = 36864 weights + 64 bias)
@@ -99,14 +106,14 @@ class Visualize {
 
     videoTexture = loadTexture(named: "sophie.png")!
 
-    img1 = MPSImage(device: device, imageDescriptor: inputImgDesc)
-    img2 = MPSImage(device: device, imageDescriptor: inputImgDesc)
-    img3 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
-    img4 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
-    img5 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
-    img6 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
-    img7 = MPSImage(device: device, imageDescriptor: pool1ImgDesc)
-    img8 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
+    imgScaled = MPSImage(device: device, imageDescriptor: inputImgDesc)
+    imgMeanAdjusted = MPSImage(device: device, imageDescriptor: inputImgDesc)
+    imgConv1_1 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
+    imgNorm1_1 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
+    imgConv1_2 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
+    imgNorm1_2 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
+    imgPool1 = MPSImage(device: device, imageDescriptor: pool1ImgDesc)
+    imgNorm1_3 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
 
     lanczos = MPSImageLanczosScale(device: device)
     subtractMeanColor = SubtractMeanColor(device: device)
@@ -178,45 +185,33 @@ class Visualize {
 
     let startTime = CACurrentMediaTime()
 
-    // The dimensions of the Metal view in pixels.
-    let width = Float(view.bounds.width * view.contentScaleFactor)
-    let height = Float(view.bounds.height * view.contentScaleFactor)
-
-    // I want the origin (0, 0) to be in the top-left corner, with y positive
-    // going down. The default Metal viewport goes from -1 to +1 so we need to
-    // scale it by width/2 and height/2, and flip the sign of the height.
-    let projectionMatrix = float4x4.scale(to: [2/width, -2/height, 1])
-                         * float4x4.translate(to: [-width/2, -height/2, 0])
-
     let commandBuffer = commandQueue.makeCommandBuffer()
 
-    // NOTE: Normally you'd use MPSTemporaryImage objects for speed and space
-    // reasons but since we want to show these textures inside a render pass,
-    // we keep to use regular MPSImage objects otherwise they get reused.
-
+    // Run the neural network, up to the thing that we're visualizing.
+    // This is why the FPS drops the further in the network you look.
     if let inputTexture = videoTexture {
-      lanczos.encode(commandBuffer: commandBuffer, sourceTexture: inputTexture, destinationTexture: img1.texture)
+      lanczos.encode(commandBuffer: commandBuffer, sourceTexture: inputTexture, destinationTexture: imgScaled.texture)
 
-      subtractMeanColor.encode(commandBuffer: commandBuffer, sourceTexture: img1.texture, destinationTexture: img2.texture)
+      subtractMeanColor.encode(commandBuffer: commandBuffer, sourceTexture: imgScaled.texture, destinationTexture: imgMeanAdjusted.texture)
 
       if activePanelIndex >= 1 {
-        conv1_1.encode(commandBuffer: commandBuffer, sourceImage: img2, destinationImage: img3)
+        conv1_1.encode(commandBuffer: commandBuffer, sourceImage: imgMeanAdjusted, destinationImage: imgConv1_1)
         if activePanelIndex == 1 {
-          norm1_1.encode(commandBuffer: commandBuffer, sourceImage: img3, destinationImage: img4)
+          norm1_1.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_1, destinationImage: imgNorm1_1)
         }
       }
 
       if activePanelIndex >= 2 {
-        conv1_2.encode(commandBuffer: commandBuffer, sourceImage: img3, destinationImage: img5)
+        conv1_2.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_1, destinationImage: imgConv1_2)
         if activePanelIndex == 2 {
-          norm1_2.encode(commandBuffer: commandBuffer, sourceImage: img5, destinationImage: img6)
+          norm1_2.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_2, destinationImage: imgNorm1_2)
         }
       }
 
       if activePanelIndex >= 3 {
-        pool1.encode(commandBuffer: commandBuffer, sourceImage: img5, destinationImage: img7)
+        pool1.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_2, destinationImage: imgPool1)
         if activePanelIndex == 3 {
-          norm1_3.encode(commandBuffer: commandBuffer, sourceImage: img7, destinationImage: img8)
+          norm1_3.encode(commandBuffer: commandBuffer, sourceImage: imgPool1, destinationImage: imgNorm1_3)
         }
       }
     }
@@ -227,18 +222,28 @@ class Visualize {
       let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
 
       if activePanelIndex == 0 {
-        panels[activePanelIndex].set(texture: img1.texture, forQuadAt: 0)
-        panels[activePanelIndex].set(texture: img2.texture, forQuadAt: 1)
+        panels[activePanelIndex].set(texture: imgScaled.texture, forQuadAt: 0)
+        panels[activePanelIndex].set(texture: imgMeanAdjusted.texture, forQuadAt: 1)
       }
       if activePanelIndex == 1 {
-        panels[activePanelIndex].set(texture: img3.texture, max: img4.texture)
+        panels[activePanelIndex].set(texture: imgConv1_1.texture, max: imgNorm1_1.texture)
       }
       if activePanelIndex == 2 {
-        panels[activePanelIndex].set(texture: img5.texture, max: img6.texture)
+        panels[activePanelIndex].set(texture: imgConv1_2.texture, max: imgNorm1_2.texture)
       }
       if activePanelIndex == 3 {
-        panels[activePanelIndex].set(texture: img7.texture, max: img8.texture)
+        panels[activePanelIndex].set(texture: imgPool1.texture, max: imgNorm1_3.texture)
       }
+
+      // The dimensions of the Metal view in pixels.
+      let width = Float(view.bounds.width * view.contentScaleFactor)
+      let height = Float(view.bounds.height * view.contentScaleFactor)
+
+      // I want the origin (0, 0) to be in the top-left corner, with y positive
+      // going down. The default Metal viewport goes from -1 to +1 so we need to
+      // scale it by width/2 and height/2, and flip the sign of the height.
+      let projectionMatrix = float4x4.scale(to: [2/width, -2/height, 1])
+                           * float4x4.translate(to: [-width/2, -height/2, 0])
 
       renderer.encode(renderEncoder, quads: activePanel.quads, matrix: projectionMatrix, for: inflightIndex)
 
