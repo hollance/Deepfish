@@ -39,15 +39,19 @@ class Visualize {
 
   let inputImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 3)
   let conv1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 224, height: 224, featureChannels: 64)
+  let norm1ImgDesc = MPSImageDescriptor(channelFormat: .float16, width: 1, height: 1, featureChannels: 64)
 
   let img1: MPSImage
   let img2: MPSImage
   let img3: MPSImage
+  let img4: MPSImage
 
   let lanczos: MPSImageLanczosScale
   let subtractMeanColor: SubtractMeanColor
 
   let conv1_1: MPSCNNConvolution  // 224x224x3  input, 64 kernels (3x3x3x64  = 1728  weights + 64 bias)
+
+  let norm1: MPSCNNPoolingMax
 
   var quads: QuadRenderer!
 
@@ -60,6 +64,7 @@ class Visualize {
     img1 = MPSImage(device: device, imageDescriptor: inputImgDesc)
     img2 = MPSImage(device: device, imageDescriptor: inputImgDesc)
     img3 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
+    img4 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
 
     lanczos = MPSImageLanczosScale(device: device)
     subtractMeanColor = SubtractMeanColor(device: device)
@@ -70,6 +75,16 @@ class Visualize {
     }
 
     conv1_1 = makeConv(device: device, inDepth:   3, outDepth:  64, weights: blob.conv1_1_w, bias: blob.conv1_1_b)
+
+    // The output of a conv layer is between 0 and any positive number (no
+    // negative numbers because of the ReLU). We need to scale this down to
+    // the range [0, 1]. To find the maximum value in each channel, we can
+    // send the conv layer output through a max-pool layer that covers the
+    // entire spatial extent. Then in the shader we divide the activations
+    // by this max value.
+    norm1 = MPSCNNPoolingMax(device: device, kernelWidth: 224, kernelHeight: 224,
+                             strideInPixelsX: 224, strideInPixelsY: 224)
+    norm1.offset = MPSOffset(x: 112, y: 112, z: 0)
 
     quads = QuadRenderer(device: device, pixelFormat: view.colorPixelFormat, maxQuads: MaxQuads, inflightCount: MaxFramesInFlight)
     createQuads()
@@ -120,6 +135,8 @@ class Visualize {
       subtractMeanColor.encode(commandBuffer: commandBuffer, sourceTexture: img1.texture, destinationTexture: img2.texture)
 
       conv1_1.encode(commandBuffer: commandBuffer, sourceImage: img2, destinationImage: img3)
+
+      norm1.encode(commandBuffer: commandBuffer, sourceImage: img3, destinationImage: img4)
     }
 
     if let renderPassDescriptor = view.currentRenderPassDescriptor,
@@ -136,6 +153,7 @@ class Visualize {
       // easy. We also don't care about only encoding quads that are visible. 
       for i in 0..<64 {
         quads[i + 2].texture = img3.texture
+        quads[i + 2].max = img4.texture
       }
       quads.encode(renderEncoder, matrix: projectionMatrix, for: inflightIndex)
 

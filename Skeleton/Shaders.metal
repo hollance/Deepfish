@@ -37,22 +37,32 @@ fragment half4 fragmentFunc(
 fragment half4 fragmentFuncA(
   Vertex vert [[stage_in]],
   constant FragmentUniforms &uniforms [[buffer(0)]],
-  texture2d_array<half> texture [[texture(0)]])
+  texture2d_array<half> texture [[texture(0)]],
+  texture2d_array<half> maxTexture [[texture(1)]])
 {
   constexpr sampler s;
   half4 inColor = texture.sample(s, vert.texCoord, uniforms.textureIndex);
+  half4 maxValue = maxTexture.sample(s, float2(0, 0), uniforms.textureIndex);
+
+  // We read from a single channel in the texture and convert that to a
+  // grayscale color. To normalize this to a color in the range [0,1], we
+  // divide the activation value by the maximum value from that channel.
 
   half4 outColor;
-  if (uniforms.channelIndex == -1) {
-    outColor = inColor;
+  if (uniforms.channelIndex == -1) {   // pass through as RGBA
+    outColor = inColor / maxValue;
   } else if (uniforms.channelIndex == 0) {
     outColor = half4(inColor.x, inColor.x, inColor.x, 1.0h);
+    outColor /= half4(maxValue.x, maxValue.x, maxValue.x, 1.0h);
   } else if (uniforms.channelIndex == 1) {
     outColor = half4(inColor.y, inColor.y, inColor.y, 1.0h);
+    outColor /= half4(maxValue.y, maxValue.y, maxValue.y, 1.0h);
   } else if (uniforms.channelIndex == 2) {
     outColor = half4(inColor.z, inColor.z, inColor.z, 1.0h);
+    outColor /= half4(maxValue.z, maxValue.z, maxValue.z, 1.0h);
   } else {
     outColor = half4(inColor.w, inColor.w, inColor.w, 1.0h);
+    outColor /= half4(maxValue.w, maxValue.w, maxValue.w, 1.0h);
   }
   return outColor;
 };

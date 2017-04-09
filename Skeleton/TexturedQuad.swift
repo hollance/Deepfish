@@ -21,8 +21,9 @@ class TexturedQuad {
   var position = float3()
   var size: Float = 100
   var texture: MTLTexture?
+  var max: MTLTexture?      // for normalizing
   var isArray = false
-  var channel = 0  // -1 means display as RGBA
+  var channel = 0           // -1 means display as RGBA
 
   init(position: float3, size: Float) {
     self.position = position
@@ -89,7 +90,7 @@ class QuadRenderer {
       // from -0.5 to +0.5, so we should scale it to the actual size in pixels.
       var vertexUniform = VertexUniform()
       vertexUniform.matrix = matrix * float4x4.translate(to: quad.position)
-                              * float4x4.scale(to: [quad.size, -quad.size, 1])
+                                    * float4x4.scale(to: [quad.size, -quad.size, 1])
 
       // Copy the matrix into the uniform buffer.
       let vertexUniformSize = MemoryLayout<VertexUniform>.stride
@@ -110,6 +111,7 @@ class QuadRenderer {
       encoder.setVertexBuffer(vertexUniformBuffer, offset: vertexOffset, at: 1)
       encoder.setFragmentBuffer(fragmentUniformBuffer, offset: fragmentOffset, at: 0)
       encoder.setFragmentTexture(quad.texture, at: 0)
+      encoder.setFragmentTexture(quad.max, at: 1)
       encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
       encoder.popDebugGroup()
     }
