@@ -1,8 +1,8 @@
-# Aunt Emma's ConvNet Diagnostic ToolKit 
+# Deepfish, a.k.a. Aunt Emma's ConvNet Diagnostic ToolKit 
 
 This is an iPhone app that applies the VGGNet-16 convolutional neural network to the live camera feed and visualizes what happens after each layer:
 
-TODO pica
+![Screenshot](Screenshot.png)
 
 Swipe left/right to look at the different layers.
 
@@ -15,6 +15,8 @@ Only tested on the iPhone 6s but the app *should* work on other iPhones too, as 
 ## Improvements
 
 Things that need work:
+
+- Add the other conv and pool layers. Currently it only does the first 3 layers (plus input).
 
 - The further inside the neural network you look, the slower the app becomes. That's because it needs to do more computations. The camera should adjust its FPS to match.
 
@@ -36,8 +38,8 @@ For more information about VGGNet, see [the project page](http://www.robots.ox.a
 
 We're using configuration D from the paper, as found in the [Caffe Model Zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo):
   
-- Input image is 224 x 224 pixels x 3 color channels (RGB).
-- All convolution kernels are 3x3.
+- Input image is 224 × 224 pixels × 3 color channels (RGB).
+- All convolution kernels are 3×3.
 - All convolution layers use 1-element zero-padding to preserve the width and height of the input volume.
 - Convolution is followed by a ReLU.
 - All pooling layers are max-pool, size 2, stride 2. These chop the input width and height in half but preserve the depth.
