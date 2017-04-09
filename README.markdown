@@ -6,6 +6,8 @@ TODO pica
 
 Swipe left/right to look at the different layers.
 
+Tap the video preview to switch to a static image of a cat (useful for testing that the neural network code actually works).
+
 > Note: this is alpha software. I quickly threw this together to play with convnet visualizations on my iPhone. There are a lot of things in the code that are not quite kosher yet.
 
 Only tested on the iPhone 6s but the app *should* work on other iPhones too, as long as they have an A8 processor.

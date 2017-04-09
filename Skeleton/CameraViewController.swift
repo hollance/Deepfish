@@ -8,6 +8,8 @@ import QuartzCore
 class CameraViewController: UIViewController {
 
   @IBOutlet weak var videoPreview: UIView!
+  @IBOutlet weak var imageView: UIImageView!
+
   @IBOutlet weak var panelLabel: UILabel!
   @IBOutlet weak var detailsLabel: UILabel!
   @IBOutlet weak var timeLabel: UILabel!
@@ -18,6 +20,7 @@ class CameraViewController: UIViewController {
   var videoCapture: VideoCapture!
   var visualize: Visualize!
   var device: MTLDevice!
+  var useCamera = true
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -30,6 +33,7 @@ class CameraViewController: UIViewController {
 
     videoCapture = VideoCapture(device: device, delegate: self)
     visualize = Visualize(device: device, view: metalView)
+    visualize.videoTexture = defaultTexture
 
     metalView.clearColor = MTLClearColor(red: 20/255, green: 30/255, blue: 40/255, alpha: 1)
     metalView.device = device
@@ -42,6 +46,9 @@ class CameraViewController: UIViewController {
     // wasteful -- we'll already be burning enough battery as it is.
     metalView.isPaused = true
     metalView.enableSetNeedsDisplay = false
+
+    let tap = UITapGestureRecognizer(target: self, action: #selector(previewTapped))
+    videoPreview.addGestureRecognizer(tap)
 
     let swipeLeft = UISwipeGestureRecognizer(target: self, action: #selector(swipedLeft))
     swipeLeft.direction = .left
@@ -69,6 +76,8 @@ class CameraViewController: UIViewController {
     frame.size.height = frame.size.width * 3 / 4
     videoPreview.frame = frame
 
+    imageView.frame = videoPreview.bounds
+
     resizePreviewLayer()
     updatePanel()
   }
@@ -86,6 +95,20 @@ class CameraViewController: UIViewController {
     videoCapture.previewLayer?.frame = videoPreview.bounds
   }
 
+  func previewTapped(_ gestureRecognizer: UITapGestureRecognizer) {
+    useCamera = !useCamera
+    videoCapture.previewLayer!.isHidden = !useCamera
+    if !useCamera {
+      visualize.videoTexture = defaultTexture
+      visualize.channelOrderBGR = false
+      metalView.draw()
+    }
+  }
+
+  var defaultTexture: MTLTexture = {
+    return loadTexture(named: "cat.jpg")!
+  }()
+
   // MARK: - Panels
 
   func updatePanel() {
@@ -101,13 +124,17 @@ class CameraViewController: UIViewController {
   }
 
   func swipedLeft(_ gestureRecognizer: UISwipeGestureRecognizer) {
-    visualize.activateNextPanel()
-    updatePanel()
+    if visualize.activateNextPanel() {
+      updatePanel()
+      metalView.draw()
+    }
   }
 
   func swipedRight(_ gestureRecognizer: UISwipeGestureRecognizer) {
-    visualize.activatePreviousPanel()
-    updatePanel()
+    if visualize.activatePreviousPanel() {
+      updatePanel()
+      metalView.draw()
+    }
   }
 }
 
@@ -134,10 +161,12 @@ extension CameraViewController: VideoCaptureDelegate {
     // is if the CVMetalTextureCache loads new data into the same MTLTexture
     // instance that is currently being used for drawing -- but that shouldn't
     // happen.
-    DispatchQueue.main.async {
-      self.visualize.videoTexture = texture
-      self.visualize.channelOrderBGR = true
-      self.metalView.draw()
+    if useCamera {
+      DispatchQueue.main.async {
+        self.visualize.videoTexture = texture
+        self.visualize.channelOrderBGR = true
+        self.metalView.draw()
+      }
     }
   }
 

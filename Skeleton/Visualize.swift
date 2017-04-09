@@ -105,8 +105,6 @@ class Visualize {
     self.device = device
     commandQueue = device.makeCommandQueue()
 
-    videoTexture = loadTexture(named: "cat.jpg")!
-
     imgScaled = MPSImage(device: device, imageDescriptor: inputImgDesc)
     imgMeanAdjusted = MPSImage(device: device, imageDescriptor: inputImgDesc)
     imgConv1_1 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
@@ -168,16 +166,20 @@ class Visualize {
     return panels[activePanelIndex]
   }
 
-  func activatePreviousPanel() {
+  func activatePreviousPanel() -> Bool {
     if activePanelIndex > 0 {
       activePanelIndex -= 1
+      return true
     }
+    return false
   }
 
-  func activateNextPanel() {
+  func activateNextPanel() -> Bool {
     if activePanelIndex < panels.count - 1 {
       activePanelIndex += 1
+      return true
     }
+    return false
   }
 
   func draw(in view: MTKView, callback: @escaping (CFTimeInterval) -> Void) {

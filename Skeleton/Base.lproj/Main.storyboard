@@ -20,6 +20,12 @@
                             <view contentMode="scaleToFill" id="bCL-P6-Xzi" userLabel="Video Preview">
                                 <rect key="frame" x="0.0" y="0.0" width="284" height="160"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                <subviews>
+                                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" misplaced="YES" image="cat.jpg" id="Dc7-Be-j24">
+                                        <rect key="frame" x="0.0" y="0.0" width="200" height="160"/>
+                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                                    </imageView>
+                                </subviews>
                                 <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                             </view>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" misplaced="YES" id="9E1-As-W4h">
@@ -60,6 +66,7 @@
                     <simulatedStatusBarMetrics key="simulatedStatusBarMetrics" statusBarStyle="lightContent"/>
                     <connections>
                         <outlet property="detailsLabel" destination="pSr-nf-yup" id="D8p-nm-201"/>
+                        <outlet property="imageView" destination="Dc7-Be-j24" id="fjg-TU-UNH"/>
                         <outlet property="metalView" destination="DCa-Uf-yPL" id="tu4-wd-UKs"/>
                         <outlet property="panelLabel" destination="elR-uz-gFP" id="fQm-Lx-blj"/>
                         <outlet property="scrollView" destination="9E1-As-W4h" id="QDE-4I-xC6"/>
@@ -69,9 +76,12 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="85" y="153"/>
+            <point key="canvasLocation" x="83" y="262"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="cat.jpg" width="480" height="360"/>
+    </resources>
     <simulatedMetricsContainer key="defaultSimulatedMetrics">
         <simulatedStatusBarMetrics key="statusBar"/>
         <simulatedOrientationMetrics key="orientation" orientation="landscapeRight"/>
