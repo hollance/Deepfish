@@ -81,21 +81,18 @@ class Visualize {
   let imgScaled: MPSImage
   let imgMeanAdjusted: MPSImage
   let imgConv1_1: MPSImage
-  let imgNorm1_1: MPSImage
+  let imgNorm1: MPSImage
   let imgConv1_2: MPSImage
-  let imgNorm1_2: MPSImage
   let imgPool1: MPSImage
-  let imgNorm1_3: MPSImage
 
   // The layers
   let lanczos: MPSImageLanczosScale
   let subtractMeanColor: SubtractMeanColor
   let conv1_1: MPSCNNConvolution  // 224x224x3  input, 64 kernels (3x3x3x64  = 1728  weights + 64 bias)
-  let norm1_1: MPSCNNPoolingMax
+  let norm1_a: MPSCNNPoolingMax
   let conv1_2: MPSCNNConvolution  // 224x224x64 input, 64 kernels (3x3x64x64 = 36864 weights + 64 bias)
-  let norm1_2: MPSCNNPoolingMax
   let pool1  : MPSCNNPoolingMax   // 224x224x64 input -> 112x112x64 output
-  let norm1_3: MPSCNNPoolingMax
+  let norm1_b: MPSCNNPoolingMax
 
   var panels: [Panel] = []
   var activePanelIndex = 0
@@ -108,11 +105,9 @@ class Visualize {
     imgScaled = MPSImage(device: device, imageDescriptor: inputImgDesc)
     imgMeanAdjusted = MPSImage(device: device, imageDescriptor: inputImgDesc)
     imgConv1_1 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
-    imgNorm1_1 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
+    imgNorm1 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
     imgConv1_2 = MPSImage(device: device, imageDescriptor: conv1ImgDesc)
-    imgNorm1_2 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
     imgPool1 = MPSImage(device: device, imageDescriptor: pool1ImgDesc)
-    imgNorm1_3 = MPSImage(device: device, imageDescriptor: norm1ImgDesc)
 
     lanczos = MPSImageLanczosScale(device: device)
     subtractMeanColor = SubtractMeanColor(device: device)
@@ -123,11 +118,10 @@ class Visualize {
     }
 
     conv1_1 = makeConv(device: device, inDepth:   3, outDepth:  64, weights: blob.conv1_1_w, bias: blob.conv1_1_b)
-    norm1_1 = makeNorm(device: device, extent: 224)
+    norm1_a = makeNorm(device: device, extent: 224)
     conv1_2 = makeConv(device: device, inDepth:  64, outDepth:  64, weights: blob.conv1_2_w, bias: blob.conv1_2_b)
-    norm1_2 = makeNorm(device: device, extent: 224)
     pool1   = makePool(device: device)
-    norm1_3 = makeNorm(device: device, extent: 112)
+    norm1_b = makeNorm(device: device, extent: 112)
 
     renderer = QuadRenderer(device: device, pixelFormat: view.colorPixelFormat, maxQuads: MaxQuads, inflightCount: MaxFramesInFlight)
 
@@ -200,21 +194,21 @@ class Visualize {
       if activePanelIndex >= 1 {
         conv1_1.encode(commandBuffer: commandBuffer, sourceImage: imgMeanAdjusted, destinationImage: imgConv1_1)
         if activePanelIndex == 1 {
-          norm1_1.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_1, destinationImage: imgNorm1_1)
+          norm1_a.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_1, destinationImage: imgNorm1)
         }
       }
 
       if activePanelIndex >= 2 {
         conv1_2.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_1, destinationImage: imgConv1_2)
         if activePanelIndex == 2 {
-          norm1_2.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_2, destinationImage: imgNorm1_2)
+          norm1_a.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_2, destinationImage: imgNorm1)
         }
       }
 
       if activePanelIndex >= 3 {
         pool1.encode(commandBuffer: commandBuffer, sourceImage: imgConv1_2, destinationImage: imgPool1)
         if activePanelIndex == 3 {
-          norm1_3.encode(commandBuffer: commandBuffer, sourceImage: imgPool1, destinationImage: imgNorm1_3)
+          norm1_b.encode(commandBuffer: commandBuffer, sourceImage: imgPool1, destinationImage: imgNorm1)
         }
       }
     }
@@ -229,13 +223,13 @@ class Visualize {
         panels[activePanelIndex].set(texture: imgMeanAdjusted.texture, forQuadAt: 1)
       }
       if activePanelIndex == 1 {
-        panels[activePanelIndex].set(texture: imgConv1_1.texture, max: imgNorm1_1.texture)
+        panels[activePanelIndex].set(texture: imgConv1_1.texture, max: imgNorm1.texture)
       }
       if activePanelIndex == 2 {
-        panels[activePanelIndex].set(texture: imgConv1_2.texture, max: imgNorm1_2.texture)
+        panels[activePanelIndex].set(texture: imgConv1_2.texture, max: imgNorm1.texture)
       }
       if activePanelIndex == 3 {
-        panels[activePanelIndex].set(texture: imgPool1.texture, max: imgNorm1_3.texture)
+        panels[activePanelIndex].set(texture: imgPool1.texture, max: imgNorm1.texture)
       }
 
       // The dimensions of the Metal view in pixels.
