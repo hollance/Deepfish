@@ -166,7 +166,7 @@ extension CameraViewController: VideoCaptureDelegate {
     if useCamera {
       DispatchQueue.main.async {
         self.visualize.videoTexture = texture
-        self.visualize.channelOrderBGR = true
+        self.visualize.channelOrderBGR = false
         self.metalView.draw()
       }
     }

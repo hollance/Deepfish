@@ -134,7 +134,8 @@ class Visualize {
     panel.extraInfo = "224×224 image, 3 channels"
     panel.add(TexturedQuad(position: [112, 112, 0], size: 224))
     panel.add(TexturedQuad(position: [336, 112, 0], size: 224))
-    panel.contentSize = CGSize(width: 224*2, height: 224)
+    panel.add(TexturedQuad(position: [560, 112, 0], size: 224))
+    panel.contentSize = CGSize(width: 224*3, height: 224)
     panels.append(panel)
 
     panel = Panel()
@@ -184,6 +185,14 @@ class Visualize {
 
     let commandBuffer = commandQueue.makeCommandBuffer()
 
+    /*
+      The texture from the camera is type 80 (bgra8Unorm). The texture from
+      cat.jpg is also type 80 (bgra8Unorm). However, after resizing the pixel
+      format is 115 (rgba16Float). So now it is RGBA again instead of BGRA.
+      Since Caffe requires the pixels to be in BGR order, we need to swap them
+      again (which happens in subtractMeanColor).
+    */
+
     // Run the neural network, up to the thing that we're visualizing.
     // This is why the FPS drops the further in the network you look.
     if let inputTexture = videoTexture {
@@ -219,8 +228,9 @@ class Visualize {
       let renderEncoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor)
 
       if activePanelIndex == 0 {
-        panels[activePanelIndex].set(texture: imgScaled.texture, forQuadAt: 0)
-        panels[activePanelIndex].set(texture: imgMeanAdjusted.texture, forQuadAt: 1)
+        panels[activePanelIndex].set(texture: videoTexture!, forQuadAt: 0)
+        panels[activePanelIndex].set(texture: imgScaled.texture, forQuadAt: 1)
+        panels[activePanelIndex].set(texture: imgMeanAdjusted.texture, forQuadAt: 2)
       }
       if activePanelIndex == 1 {
         panels[activePanelIndex].set(texture: imgConv1_1.texture, max: imgNorm1.texture)
